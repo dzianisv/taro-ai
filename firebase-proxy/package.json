@@ -4,9 +4,9 @@
   "description": "Taro AI — Secure Gemini API proxy with Firebase Auth + Firestore usage accounting",
   "main": "index.js",
   "scripts": {
-    "deploy": "gcloud functions deploy secureGeminiProxy --gen2 --region=us-central1 --runtime=nodejs20 --source=. --entry-point=secureGeminiProxy --trigger-http --allow-unauthenticated --set-secrets=GEMINI_API_KEY=gemini-api-key:latest --project=taro-ai-502921"
+    "deploy": "gcloud functions deploy secureGeminiProxy --gen2 --region=us-central1 --runtime=nodejs22 --source=. --entry-point=secureGeminiProxy --trigger-http --allow-unauthenticated --set-secrets=GEMINI_API_KEY=gemini-api-key:latest --project=taro-ai-502921"
   },
-  "engines": { "node": "20" },
+  "engines": { "node": "22" },
   "dependencies": {
     "axios": "^1.7.9",
     "firebase-admin": "^12.7.0",
