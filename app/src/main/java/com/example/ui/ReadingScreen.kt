@@ -32,6 +32,7 @@ fun ReadingScreen(
     onNavigateBack: () -> Unit
 ) {
     val readingState by viewModel.readingState.collectAsStateWithLifecycle()
+    val scannedBitmap by viewModel.scannedBitmap.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -102,6 +103,9 @@ fun ReadingScreen(
                     }
                     is ReadingUiState.Success -> {
                         ReadingContent(reading = state.reading)
+                    }
+                    is ReadingUiState.StructuredSuccess -> {
+                        StructuredReadingContent(reading = state.reading, bitmap = scannedBitmap)
                     }
                     is ReadingUiState.Error -> {
                         Text(

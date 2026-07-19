@@ -80,6 +80,22 @@ fun TaroApp(
                 viewModel = viewModel,
                 onNavigateToReading = {
                     navController.navigate("reading")
+                },
+                onNavigateToScanner = {
+                    navController.navigate("scanner")
+                }
+            )
+        }
+        composable("scanner") {
+            com.example.ui.TarotScannerScreen(
+                viewModel = viewModel,
+                onBack = {
+                    navController.popBackStack()
+                },
+                onNavToReading = {
+                    navController.navigate("reading") {
+                        popUpTo("scanner") { inclusive = true }
+                    }
                 }
             )
         }

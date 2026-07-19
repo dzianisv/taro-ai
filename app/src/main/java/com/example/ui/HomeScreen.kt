@@ -49,7 +49,8 @@ import java.io.ByteArrayOutputStream
 @Composable
 fun HomeScreen(
     viewModel: MainViewModel,
-    onNavigateToReading: () -> Unit
+    onNavigateToReading: () -> Unit,
+    onNavigateToScanner: () -> Unit
 ) {
     val history by viewModel.history.collectAsStateWithLifecycle()
     val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
@@ -235,7 +236,18 @@ fun HomeScreen(
                     item {
                         ReadingActionCard(
                             title = "Scan Physical Card",
-                            subtitle = "Snap or choose a photo of a card to analyze",
+                            subtitle = "Live camera scan with AI card recognition",
+                            icon = Icons.Default.AutoAwesome,
+                            onClick = {
+                                onNavigateToScanner()
+                            }
+                        )
+                    }
+
+                    item {
+                        ReadingActionCard(
+                            title = "Scan From Gallery",
+                            subtitle = "Choose a photo of a card to analyze",
                             icon = Icons.Default.AutoAwesome,
                             onClick = {
                                 imagePickerLauncher.launch("image/*")

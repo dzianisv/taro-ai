@@ -33,7 +33,8 @@ data class InlineData(
 data class GenerationConfig(
     val temperature: Float? = null,
     val topP: Float? = null,
-    val topK: Int? = null
+    val topK: Int? = null,
+    val responseMimeType: String? = null
 )
 
 @JsonClass(generateAdapter = true)
