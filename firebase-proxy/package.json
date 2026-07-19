@@ -1,21 +1,16 @@
 {
-  "name": "gemini-firebase-proxy",
-  "version": "1.0.0",
-  "description": "Secure GenAI / Gemini API Proxy with Google/Firebase Authentication",
+  "name": "taro-secure-gemini-proxy",
+  "version": "1.1.0",
+  "description": "Taro AI — Secure Gemini API proxy with Firebase Auth + Firestore usage accounting",
   "main": "index.js",
   "scripts": {
-    "serve": "firebase emulators:start --only functions",
-    "shell": "firebase functions:shell",
-    "start": "npm run shell",
-    "deploy": "firebase deploy --only functions"
+    "deploy": "gcloud functions deploy secureGeminiProxy --gen2 --region=us-central1 --runtime=nodejs20 --source=. --entry-point=secureGeminiProxy --trigger-http --allow-unauthenticated --set-secrets=GEMINI_API_KEY=gemini-api-key:latest --project=taro-ai-502921"
   },
-  "engines": {
-    "node": "18"
-  },
+  "engines": { "node": "20" },
   "dependencies": {
-    "axios": "^1.6.8",
-    "firebase-admin": "^11.11.1",
-    "firebase-functions": "^4.9.0"
+    "axios": "^1.7.9",
+    "firebase-admin": "^12.7.0",
+    "firebase-functions": "^6.1.1"
   },
   "private": true
 }
