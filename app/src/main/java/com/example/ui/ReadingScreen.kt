@@ -260,29 +260,33 @@ fun ReadingContent(reading: ReadingEntity) {
     }
 }
 
-// The offline fallback (LocalTarotInterpreter) opens every free-text reading with a fixed
-// "Ethereal Connection Mode" disclaimer paragraph. That's useful in-app context but looks
-// broken on a viral share card, so skip past it (and strip markdown/heading noise) to find
-// the first substantive line of actual card guidance.
+// The share card wants one substantive line of actual card guidance, not the
+// intro, a heading, a card label, or a position marker. Walk the formatted
+// reading line by line, drop the structural lines, and for "Energy: X" style
+// bullets keep the value after the colon.
 private fun deriveShareSummary(interpretation: String): String {
-    val paragraphs = interpretation.split("\n\n")
-    // Known fixed shape: [0] "🔮 *Ethereal Connection Mode...*", [1] disclaimer sentence,
-    // [2] "*Daily Card: X*" / "*Three-Card Spread Reading*", [3+] actual card guidance.
-    val body = if (paragraphs.firstOrNull()?.contains("Ethereal Connection Mode") == true) {
-        paragraphs.drop(2).joinToString("\n\n")
-    } else {
-        interpretation
-    }
-    val bestLine = body
-        .replace(Regex("[*_#]"), "")
+    val bestLine = interpretation
         .lineSequence()
-        .map { it.trim().replace(Regex("^[^\\p{L}\\p{N}]+"), "") }
-        .firstOrNull { line ->
-            line.length > 20 && !line.endsWith(":") &&
-                !line.startsWith("Daily Card") && !line.startsWith("Three-Card") &&
-                !line.contains("cosmic currents are swirling") && !line.contains("Ethereal Connection")
+        .map {
+            it.trim()
+                .replace(Regex("[*_#]"), "")
+                .replace(Regex("^[^\\p{L}\\p{N}]+"), "")
+                .trim()
         }
-        ?: body.replace(Regex("[*_#]"), "").trim()
+        .filter { line ->
+            line.length > 8 &&
+                !line.startsWith("The cards have spoken") &&
+                !line.startsWith("Daily Card") &&
+                !line.startsWith("Three-Card") &&
+                !line.startsWith("Foundation") &&
+                !line.startsWith("Use this guidance") &&
+                !line.matches(Regex("^\\d.*")) &&        // position headings ("1. PAST — ...")
+                !line.contains(" — ")
+        }
+        // "Energy: <meaning>" / "Potential: <meaning>" / "Focus: <advice>" -> keep the value
+        .map { if (it.contains(":")) it.substringAfter(":").trim() else it }
+        .firstOrNull { it.length > 20 && !it.endsWith(":") }
+        ?: interpretation.replace(Regex("[*_#]"), "").trim()
     return if (bestLine.length > 130) bestLine.take(130).trimEnd() + "…" else bestLine
 }
 
