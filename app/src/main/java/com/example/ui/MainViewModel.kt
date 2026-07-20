@@ -39,7 +39,12 @@ class MainViewModel(
     private val geminiRepository: GeminiRepository,
     private val getCustomApiKey: () -> String,
     private val getCustomGatewayUrl: () -> String,
-    private val getCustomGoogleClientId: () -> String
+    private val getCustomGoogleClientId: () -> String,
+    // Records a completed reading against the day-based streak (see StreakManager) and
+    // returns the updated streak count. Kept as a callback (rather than a Context) so the
+    // ViewModel stays Context-free; MainViewModelFactory wires this to StreakManager.
+    private val recordStreak: () -> Int = { 0 },
+    initialStreak: Int = 0
 ) : ViewModel() {
 
     val history: StateFlow<List<ReadingEntity>> = readingRepository.allReadings
@@ -53,6 +58,15 @@ class MainViewModel(
 
     private val _readingState = MutableStateFlow<ReadingUiState>(ReadingUiState.Idle)
     val readingState: StateFlow<ReadingUiState> = _readingState.asStateFlow()
+
+    private val _streak = MutableStateFlow(initialStreak)
+    val streak: StateFlow<Int> = _streak.asStateFlow()
+
+    // Called right after a reading is persisted so the on-device streak stays in sync
+    // with actual completed readings (not just button taps that error out).
+    private fun onReadingInserted() {
+        _streak.value = recordStreak()
+    }
 
     // Holds the most recently scanned bitmap so the reading screen can display it
     // alongside a StructuredSuccess result. Not persisted (only the reading itself is).
@@ -90,6 +104,7 @@ class MainViewModel(
                         interpretation = result.text
                     )
                     readingRepository.insert(reading)
+                    onReadingInserted()
                     _readingState.value = ReadingUiState.Success(reading)
                 }
             }
@@ -111,6 +126,7 @@ class MainViewModel(
                         interpretation = result.text
                     )
                     readingRepository.insert(reading)
+                    onReadingInserted()
                     _readingState.value = ReadingUiState.Success(reading)
                 }
             }
@@ -138,6 +154,7 @@ class MainViewModel(
                         interpretation = result.text
                     )
                     readingRepository.insert(reading)
+                    onReadingInserted()
                     _readingState.value = ReadingUiState.Success(reading)
                 }
             }
@@ -165,6 +182,7 @@ class MainViewModel(
                         interpretation = result.reading.toInterpretationText()
                     )
                     readingRepository.insert(reading)
+                    onReadingInserted()
                     _readingState.value = ReadingUiState.StructuredSuccess(result.reading)
                 }
             }
@@ -210,12 +228,24 @@ class MainViewModelFactory(
     private val geminiRepository: GeminiRepository,
     private val getCustomApiKey: () -> String,
     private val getCustomGatewayUrl: () -> String,
-    private val getCustomGoogleClientId: () -> String
+    private val getCustomGoogleClientId: () -> String,
+    // Application context only — used solely to back the streak SharedPreferences via
+    // StreakManager, never held on the ViewModel itself.
+    private val appContext: android.content.Context? = null
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
+            val context = appContext
             @Suppress("UNCHECKED_CAST")
-            return MainViewModel(readingRepository, geminiRepository, getCustomApiKey, getCustomGatewayUrl, getCustomGoogleClientId) as T
+            return MainViewModel(
+                readingRepository,
+                geminiRepository,
+                getCustomApiKey,
+                getCustomGatewayUrl,
+                getCustomGoogleClientId,
+                recordStreak = { if (context != null) com.example.data.StreakManager.recordReadingToday(context) else 0 },
+                initialStreak = if (context != null) com.example.data.StreakManager.getCurrentStreak(context) else 0
+            ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

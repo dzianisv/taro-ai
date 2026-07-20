@@ -9,8 +9,11 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -25,6 +28,11 @@ import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -43,6 +52,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.R
 import com.example.data.ReadingEntity
 import com.example.data.UserProfile
+import com.example.ui.anim.CosmicBackground
+import com.example.ui.anim.pressScale
 import java.io.ByteArrayOutputStream
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -54,6 +65,7 @@ fun HomeScreen(
 ) {
     val history by viewModel.history.collectAsStateWithLifecycle()
     val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
+    val streak by viewModel.streak.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var showSettingsDialog by remember { mutableStateOf(false) }
 
@@ -187,7 +199,10 @@ fun HomeScreen(
                         )
                     )
             )
-            
+
+            // Animated cosmic overlay (drifting glow + twinkling starfield) atop the static art.
+            CosmicBackground(modifier = Modifier.fillMaxSize())
+
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
@@ -204,6 +219,25 @@ fun HomeScreen(
                     )
                 }
 
+                if (currentUser != null && streak > 0) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(30.dp))
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
+                                .border(0.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.6f), RoundedCornerShape(30.dp))
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                        ) {
+                            Text(
+                                text = "\uD83D\uDD25 $streak-day streak",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                }
+
                 item {
                     AuthCard(viewModel = viewModel, currentUser = currentUser)
                 }
@@ -214,6 +248,7 @@ fun HomeScreen(
                             title = "Daily Draw",
                             subtitle = "A single card to guide your day",
                             icon = Icons.Default.AutoAwesome,
+                            highlight = true,
                             onClick = {
                                 viewModel.drawDailyCard()
                                 onNavigateToReading()
@@ -226,6 +261,7 @@ fun HomeScreen(
                             title = "3-Card Spread",
                             subtitle = "Past, Present, and Future",
                             icon = Icons.Default.AutoAwesome,
+                            highlight = true,
                             onClick = {
                                 viewModel.drawThreeCardSpread()
                                 onNavigateToReading()
@@ -292,13 +328,42 @@ fun ReadingActionCard(
     title: String,
     subtitle: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    highlight: Boolean = false
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+
+    // Highlighted CTAs get a slow pulsing icon + glowing border to draw the eye without nagging.
+    val transition = rememberInfiniteTransition(label = "ctaPulse")
+    val iconScale by transition.animateFloat(
+        initialValue = 1f,
+        targetValue = if (highlight) 1.06f else 1f,
+        animationSpec = infiniteRepeatable(tween(1800, easing = androidx.compose.animation.core.FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "iconScale"
+    )
+    val borderAlpha by transition.animateFloat(
+        initialValue = 0.25f,
+        targetValue = if (highlight) 0.85f else 0.25f,
+        animationSpec = infiniteRepeatable(tween(1800, easing = androidx.compose.animation.core.FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "borderAlpha"
+    )
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .pressScale(interactionSource)
             .clip(RoundedCornerShape(16.dp))
-            .clickable { onClick() },
+            .then(
+                if (highlight) Modifier.border(
+                    1.dp,
+                    MaterialTheme.colorScheme.primary.copy(alpha = borderAlpha),
+                    RoundedCornerShape(16.dp)
+                ) else Modifier
+            )
+            .clickable(
+                interactionSource = interactionSource,
+                indication = LocalIndication.current
+            ) { onClick() },
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
         )
@@ -311,7 +376,12 @@ fun ReadingActionCard(
                 imageVector = icon,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(32.dp)
+                modifier = Modifier
+                    .size(32.dp)
+                    .graphicsLayer {
+                        scaleX = iconScale
+                        scaleY = iconScale
+                    }
             )
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {

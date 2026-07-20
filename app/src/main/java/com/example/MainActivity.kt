@@ -1,13 +1,21 @@
 package com.example
 
+import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -16,6 +24,7 @@ import com.example.data.ApiKeyManager
 import com.example.data.AppDatabase
 import com.example.data.GeminiRepository
 import com.example.data.ReadingRepository
+import com.example.data.ReferralManager
 import com.example.ui.HomeScreen
 import com.example.ui.MainViewModel
 import com.example.ui.MainViewModelFactory
@@ -58,6 +67,33 @@ class MainActivity : ComponentActivity() {
         }
       }
     }
+
+    handleDeepLink(intent)
+  }
+
+  override fun onNewIntent(intent: Intent) {
+    super.onNewIntent(intent)
+    setIntent(intent)
+    handleDeepLink(intent)
+  }
+
+  // Captures a referral code from either https://taro.app/r/<code> or taro://r/<code>
+  // deep links and stashes it via ReferralManager. Defensive/no-op on any normal
+  // launcher intent (data == null) or malformed URI — must never crash app launch.
+  private fun handleDeepLink(intent: Intent?) {
+    try {
+        val uri = intent?.data ?: return
+        val code = when (uri.scheme) {
+            "https" -> uri.lastPathSegment
+            "taro" -> uri.lastPathSegment ?: uri.pathSegments.firstOrNull()
+            else -> null
+        }
+        if (!code.isNullOrBlank()) {
+            ReferralManager.saveIncomingReferralCode(this, code)
+        }
+    } catch (e: Exception) {
+        Log.w("MainActivity", "Failed to parse deep link intent", e)
+    }
   }
 }
 
@@ -70,12 +106,29 @@ fun TaroApp(
     getCustomGoogleClientId: () -> String
 ) {
     val navController = rememberNavController()
+    val appContext = LocalContext.current.applicationContext
     val viewModel: MainViewModel = viewModel(
-        factory = MainViewModelFactory(readingRepository, geminiRepository, getCustomApiKey, getCustomGatewayUrl, getCustomGoogleClientId)
+        factory = MainViewModelFactory(
+            readingRepository,
+            geminiRepository,
+            getCustomApiKey,
+            getCustomGatewayUrl,
+            getCustomGoogleClientId,
+            appContext = appContext
+        )
     )
 
     NavHost(navController = navController, startDestination = "home") {
-        composable("home") {
+        // Shared fade + horizontal slide transitions for smooth navigation between screens.
+        val slideDuration = 400
+        val fadeDuration = 300
+        composable(
+            route = "home",
+            enterTransition = { fadeIn(tween(fadeDuration)) + slideInHorizontally(tween(slideDuration)) { it / 4 } },
+            exitTransition = { fadeOut(tween(fadeDuration)) + slideOutHorizontally(tween(slideDuration)) { -it / 4 } },
+            popEnterTransition = { fadeIn(tween(fadeDuration)) + slideInHorizontally(tween(slideDuration)) { -it / 4 } },
+            popExitTransition = { fadeOut(tween(fadeDuration)) + slideOutHorizontally(tween(slideDuration)) { it / 4 } }
+        ) {
             HomeScreen(
                 viewModel = viewModel,
                 onNavigateToReading = {
@@ -86,7 +139,13 @@ fun TaroApp(
                 }
             )
         }
-        composable("scanner") {
+        composable(
+            route = "scanner",
+            enterTransition = { fadeIn(tween(fadeDuration)) + slideInHorizontally(tween(slideDuration)) { it / 4 } },
+            exitTransition = { fadeOut(tween(fadeDuration)) + slideOutHorizontally(tween(slideDuration)) { -it / 4 } },
+            popEnterTransition = { fadeIn(tween(fadeDuration)) + slideInHorizontally(tween(slideDuration)) { -it / 4 } },
+            popExitTransition = { fadeOut(tween(fadeDuration)) + slideOutHorizontally(tween(slideDuration)) { it / 4 } }
+        ) {
             com.example.ui.TarotScannerScreen(
                 viewModel = viewModel,
                 onBack = {
@@ -99,7 +158,13 @@ fun TaroApp(
                 }
             )
         }
-        composable("reading") {
+        composable(
+            route = "reading",
+            enterTransition = { fadeIn(tween(fadeDuration)) + slideInHorizontally(tween(slideDuration)) { it / 4 } },
+            exitTransition = { fadeOut(tween(fadeDuration)) + slideOutHorizontally(tween(slideDuration)) { -it / 4 } },
+            popEnterTransition = { fadeIn(tween(fadeDuration)) + slideInHorizontally(tween(slideDuration)) { -it / 4 } },
+            popExitTransition = { fadeOut(tween(fadeDuration)) + slideOutHorizontally(tween(slideDuration)) { it / 4 } }
+        ) {
             ReadingScreen(
                 viewModel = viewModel,
                 onNavigateBack = {

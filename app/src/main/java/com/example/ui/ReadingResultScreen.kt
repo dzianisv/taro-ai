@@ -20,10 +20,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.data.AuthManager
+import com.example.data.ReferralManager
+import com.example.data.StreakManager
 import com.example.data.TarotReading
+import com.example.ui.anim.CardFlipReveal
+import com.example.ui.anim.CosmicCardBack
+import com.example.ui.anim.FadeInOnAppear
+import com.example.ui.share.rememberShareCapture
 import com.example.ui.theme.NeonBlue
 import com.example.ui.theme.NeonGreen
 
@@ -31,153 +39,204 @@ import com.example.ui.theme.NeonGreen
 // reading (cardName/orientation/summary/generalMeaning/advice/warning/luckyElements).
 @Composable
 fun StructuredReadingContent(reading: TarotReading, bitmap: Bitmap?) {
+    val context = LocalContext.current
+    val shareCapture = rememberShareCapture()
+
     Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
-        // Scanned Card Preview
-        bitmap?.let {
-            Card(
-                shape = RoundedCornerShape(20.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(240.dp)
-                    .border(2.dp, Color(0xFFD4AF37), RoundedCornerShape(20.dp))
-            ) {
-                Box(modifier = Modifier.fillMaxSize()) {
-                    Image(
-                        bitmap = it.asImageBitmap(),
-                        contentDescription = "Your Tarot Card Scan",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
+        // Card Title & Orientation block, extracted so it can be either the flip "front"
+        // (when there is no scanned bitmap) or a fade-in below the scanned card.
+        val titleBlock: @Composable () -> Unit = {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = reading.cardName,
+                        style = MaterialTheme.typography.headlineLarge.copy(
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = (-0.5).sp
+                        ),
+                        color = Color(0xFFD4AF37),
+                        modifier = Modifier.weight(1f)
                     )
+
+                    val badgeColor = if (reading.orientation == "Upright") NeonGreen else NeonBlue
                     Box(
                         modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f))
-                                )
-                            )
-                    )
-                    Text(
-                        text = "YOUR PHYSICAL DRAW",
-                        color = Color(0xFFD4AF37),
-                        fontWeight = FontWeight.Black,
-                        fontSize = 11.sp,
-                        letterSpacing = 1.5.sp,
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .padding(16.dp)
-                    )
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(badgeColor.copy(alpha = 0.15f))
+                            .border(1.dp, badgeColor, RoundedCornerShape(8.dp))
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = reading.orientation.uppercase(),
+                            color = badgeColor,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp,
+                            letterSpacing = 1.sp
+                        )
+                    }
                 }
+
+                Text(
+                    text = reading.summary,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.padding(top = 12.dp)
+                )
             }
         }
 
-        // Card Title & Orientation Badge
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = reading.cardName,
-                    style = MaterialTheme.typography.headlineLarge.copy(
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = (-0.5).sp
-                    ),
-                    color = Color(0xFFD4AF37),
-                    modifier = Modifier.weight(1f)
-                )
-
-                val badgeColor = if (reading.orientation == "Upright") NeonGreen else NeonBlue
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(badgeColor.copy(alpha = 0.15f))
-                        .border(1.dp, badgeColor, RoundedCornerShape(8.dp))
-                        .padding(horizontal = 12.dp, vertical = 6.dp)
-                ) {
-                    Text(
-                        text = reading.orientation.uppercase(),
-                        color = badgeColor,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp,
-                        letterSpacing = 1.sp
-                    )
+        // Scanned Card Preview — reveal with a 3D flip. If there's no scan, flip the title block in.
+        if (bitmap != null) {
+            CardFlipReveal(
+                modifier = Modifier.fillMaxWidth(),
+                back = { CosmicCardBack(Modifier.fillMaxWidth().height(240.dp)) },
+                front = {
+                    Card(
+                        shape = RoundedCornerShape(20.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(240.dp)
+                            .border(2.dp, Color(0xFFD4AF37), RoundedCornerShape(20.dp))
+                    ) {
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            Image(
+                                bitmap = bitmap.asImageBitmap(),
+                                contentDescription = "Your Tarot Card Scan",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        Brush.verticalGradient(
+                                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f))
+                                        )
+                                    )
+                            )
+                            Text(
+                                text = "YOUR PHYSICAL DRAW",
+                                color = Color(0xFFD4AF37),
+                                fontWeight = FontWeight.Black,
+                                fontSize = 11.sp,
+                                letterSpacing = 1.5.sp,
+                                modifier = Modifier
+                                    .align(Alignment.BottomStart)
+                                    .padding(16.dp)
+                            )
+                        }
+                    }
                 }
-            }
-
-            Text(
-                text = reading.summary,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.padding(top = 12.dp)
+            )
+            FadeInOnAppear(delayMillis = 250) { titleBlock() }
+        } else {
+            CardFlipReveal(
+                modifier = Modifier.fillMaxWidth(),
+                back = { CosmicCardBack(Modifier.fillMaxWidth().height(140.dp)) },
+                front = { titleBlock() }
             )
         }
 
         HorizontalDivider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))
 
-        SectionCard(title = "GENERAL INTERPRETATION", icon = Icons.Default.MenuBook, iconTint = Color(0xFFD4AF37)) {
-            Text(
-                text = reading.generalMeaning,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
-                style = MaterialTheme.typography.bodyMedium,
-                lineHeight = 22.sp
-            )
+        FadeInOnAppear(delayMillis = 350) {
+            SectionCard(title = "GENERAL INTERPRETATION", icon = Icons.Default.MenuBook, iconTint = Color(0xFFD4AF37)) {
+                Text(
+                    text = reading.generalMeaning,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
+                    style = MaterialTheme.typography.bodyMedium,
+                    lineHeight = 22.sp
+                )
+            }
         }
 
-        SectionCard(title = "COSMIC ADVICE", icon = Icons.Default.Directions, iconTint = NeonGreen) {
-            Text(
-                text = reading.advice,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
-                style = MaterialTheme.typography.bodyMedium,
-                lineHeight = 22.sp
-            )
+        FadeInOnAppear(delayMillis = 450) {
+            SectionCard(title = "COSMIC ADVICE", icon = Icons.Default.Directions, iconTint = NeonGreen) {
+                Text(
+                    text = reading.advice,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
+                    style = MaterialTheme.typography.bodyMedium,
+                    lineHeight = 22.sp
+                )
+            }
         }
 
-        SectionCard(title = "PITFALLS TO AVOID", icon = Icons.Default.Info, iconTint = com.example.ui.theme.WarningRed) {
-            Text(
-                text = reading.warning,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
-                style = MaterialTheme.typography.bodyMedium,
-                lineHeight = 22.sp
-            )
+        FadeInOnAppear(delayMillis = 550) {
+            SectionCard(title = "PITFALLS TO AVOID", icon = Icons.Default.Info, iconTint = com.example.ui.theme.WarningRed) {
+                Text(
+                    text = reading.warning,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
+                    style = MaterialTheme.typography.bodyMedium,
+                    lineHeight = 22.sp
+                )
+            }
         }
 
         // Lucky Elements Segment (simple wrap using nested Rows, mirrors source's minimal FlowRow helper)
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(
-                "LUCKY ELEMENTS",
-                color = Color(0xFFD4AF37),
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp
-            )
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                reading.luckyElements.forEach { element ->
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(30.dp))
-                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f))
-                            .border(0.5.dp, Color(0xFFD4AF37).copy(alpha = 0.4f), RoundedCornerShape(30.dp))
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
-                    ) {
-                        Text(
-                            text = element,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
+        FadeInOnAppear(delayMillis = 650) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    "LUCKY ELEMENTS",
+                    color = Color(0xFFD4AF37),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    reading.luckyElements.forEach { element ->
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(30.dp))
+                                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f))
+                                .border(0.5.dp, Color(0xFFD4AF37).copy(alpha = 0.4f), RoundedCornerShape(30.dp))
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                        ) {
+                            Text(
+                                text = element,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
                     }
                 }
             }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
+
+        Button(
+            onClick = {
+                val displayName = AuthManager.currentUserState.value?.displayName ?: "Seeker"
+                val streak = StreakManager.getCurrentStreak(context)
+                val referralLink = ReferralManager.getReferralLink(context)
+                shareCapture.share(
+                    cardName = reading.cardName,
+                    orientation = reading.orientation,
+                    summaryLine = reading.summary,
+                    displayName = displayName,
+                    streak = streak,
+                    referralLink = referralLink
+                )
+            },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary
+            ),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(imageVector = Icons.Default.Share, contentDescription = null)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Share this reading")
+        }
     }
 }
 
