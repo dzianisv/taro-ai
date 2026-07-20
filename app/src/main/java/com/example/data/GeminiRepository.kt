@@ -109,14 +109,25 @@ class GeminiRepository {
     }
 
     private fun offlineTarotReading(): TarotReading {
+        val card = TarotDeck.drawRandom(1).first()
+        val orientation = LocalTarotInterpreter.randomOrientation()
+        val meaning = LocalTarotInterpreter.getMeaning(card)
+        val (meaningText, adviceText) = LocalTarotInterpreter.meaningFor(card, orientation)
+        val warning = if (orientation.equals("Reversed", ignoreCase = true)) {
+            "A gentle caution: don't let ${meaning.keywords.firstOrNull() ?: "this energy"} tip into its shadow."
+        } else {
+            val shadow = meaning.reversed.substringBefore(";").substringBefore(".").trim()
+                .replaceFirstChar { it.lowercase() }
+            "A gentle caution: stay mindful of $shadow."
+        }
         return TarotReading(
-            cardName = "Mystery Card",
-            orientation = "Upright",
-            summary = "The cards reveal a moment of quiet reflection.",
-            generalMeaning = LocalTarotInterpreter.generateInterpretation("Card Scan", listOf("Unknown Card")),
-            advice = "Trust your intuition — the answers you seek are already within you.",
-            warning = "Don't let impatience cloud your intuition today.",
-            luckyElements = listOf("Patience", "Reflection", "Trust")
+            cardName = card,
+            orientation = orientation,
+            summary = "The energy of $card, $orientation, surrounds this moment.",
+            generalMeaning = meaningText,
+            advice = adviceText,
+            warning = warning,
+            luckyElements = meaning.keywords.take(3)
         )
     }
 
