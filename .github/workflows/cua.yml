@@ -1,0 +1,61 @@
+name: CUA E2E (Android)
+
+# Computer-use-agent end-to-end tests against a real emulator build.
+# Manual/scheduled only: each run boots an emulator, uses vision-LLM credits,
+# and takes ~15 min. Requires repo secrets AZURE_OPENAI_API_KEY,
+# AZURE_OPENAI_ENDPOINT (and optionally AZURE_OPENAI_MODEL).
+on:
+  workflow_dispatch:
+    inputs:
+      case:
+        description: "Single case to run (blank = all)"
+        required: false
+        default: ""
+  schedule:
+    - cron: "0 6 * * 1" # weekly, Monday 06:00 UTC
+
+jobs:
+  cua:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build debug APK
+        run: ./gradlew :app:assembleDebug
+
+      - name: Run CUA suite on emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+          AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
+          AZURE_OPENAI_MODEL: ${{ secrets.AZURE_OPENAI_MODEL }}
+        with:
+          api-level: 28
+          arch: x86_64
+          target: default
+          force-avd-creation: true
+          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot
+          disable-animations: true
+          script: |
+            adb install -r app/build/outputs/apk/debug/app-debug.apk
+            ANDROID_SERIAL=emulator-5554 bash tests/cua/run.sh ${{ github.event.inputs.case }}
+
+      - name: Upload CUA media (screenshots + video + gif)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cua-media
+          path: tests/cua/output/**
+          if-no-files-found: ignore

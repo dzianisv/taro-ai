@@ -16,3 +16,6 @@
 local.properties
 .env
 debug.keystore
+
+# CUA test media (regenerated on each run)
+tests/cua/output/
