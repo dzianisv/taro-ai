@@ -219,7 +219,7 @@ fun HomeScreen(
                     )
                 }
 
-                if (currentUser != null && streak > 0) {
+                if (streak > 0) {
                     item {
                         Box(
                             modifier = Modifier
@@ -239,84 +239,82 @@ fun HomeScreen(
                 }
 
                 item {
-                    AuthCard(viewModel = viewModel, currentUser = currentUser)
+                    ReadingActionCard(
+                        title = "Daily Draw",
+                        subtitle = "A single card to guide your day",
+                        icon = Icons.Default.AutoAwesome,
+                        highlight = true,
+                        onClick = {
+                            viewModel.drawDailyCard()
+                            onNavigateToReading()
+                        }
+                    )
                 }
 
-                if (currentUser != null) {
-                    item {
-                        ReadingActionCard(
-                            title = "Daily Draw",
-                            subtitle = "A single card to guide your day",
-                            icon = Icons.Default.AutoAwesome,
-                            highlight = true,
-                            onClick = {
-                                viewModel.drawDailyCard()
-                                onNavigateToReading()
-                            }
-                        )
-                    }
+                item {
+                    ReadingActionCard(
+                        title = "3-Card Spread",
+                        subtitle = "Past, Present, and Future",
+                        icon = Icons.Default.AutoAwesome,
+                        highlight = true,
+                        onClick = {
+                            viewModel.drawThreeCardSpread()
+                            onNavigateToReading()
+                        }
+                    )
+                }
 
-                    item {
-                        ReadingActionCard(
-                            title = "3-Card Spread",
-                            subtitle = "Past, Present, and Future",
-                            icon = Icons.Default.AutoAwesome,
-                            highlight = true,
-                            onClick = {
-                                viewModel.drawThreeCardSpread()
-                                onNavigateToReading()
-                            }
-                        )
-                    }
+                item {
+                    ReadingActionCard(
+                        title = "Scan Physical Card",
+                        subtitle = "Live camera scan with AI card recognition",
+                        icon = Icons.Default.AutoAwesome,
+                        onClick = {
+                            onNavigateToScanner()
+                        }
+                    )
+                }
 
-                    item {
-                        ReadingActionCard(
-                            title = "Scan Physical Card",
-                            subtitle = "Live camera scan with AI card recognition",
-                            icon = Icons.Default.AutoAwesome,
-                            onClick = {
-                                onNavigateToScanner()
-                            }
-                        )
-                    }
+                item {
+                    ReadingActionCard(
+                        title = "Scan From Gallery",
+                        subtitle = "Choose a photo of a card to analyze",
+                        icon = Icons.Default.AutoAwesome,
+                        onClick = {
+                            imagePickerLauncher.launch("image/*")
+                        }
+                    )
+                }
 
-                    item {
-                        ReadingActionCard(
-                            title = "Scan From Gallery",
-                            subtitle = "Choose a photo of a card to analyze",
-                            icon = Icons.Default.AutoAwesome,
-                            onClick = {
-                                imagePickerLauncher.launch("image/*")
-                            }
-                        )
-                    }
+                item {
+                    Text(
+                        text = "Reading History",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
+                    )
+                }
 
+                if (history.isEmpty()) {
                     item {
                         Text(
-                            text = "Reading History",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onBackground,
-                            modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
+                            text = "Your journey begins here. Draw a card to start.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
                         )
                     }
-                    
-                    if (history.isEmpty()) {
-                        item {
-                            Text(
-                                text = "Your journey begins here. Draw a card to start.",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
-                            )
-                        }
-                    } else {
-                        items(history) { reading ->
-                            HistoryCard(reading = reading) {
-                                viewModel.selectReading(reading)
-                                onNavigateToReading()
-                            }
+                } else {
+                    items(history) { reading ->
+                        HistoryCard(reading = reading) {
+                            viewModel.selectReading(reading)
+                            onNavigateToReading()
                         }
                     }
+                }
+
+                item {
+                    AuthCard(viewModel = viewModel, currentUser = currentUser)
                 }
             }
         }
