@@ -102,7 +102,7 @@ object LocalTarotInterpreter {
     }
 
     fun generateInterpretation(type: String, cards: List<String>): String {
-        val intro = "🔮 *Ethereal Connection Mode (Offline Fallback)*\n\nThe cosmic currents are swirling, and although our direct link to the central ether is busy, the cards speak directly through your device's native spirit.\n\n"
+        val intro = "🔮 *The cards have spoken.*\n\n"
         
         return when (type) {
             "Daily" -> {

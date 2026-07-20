@@ -81,7 +81,7 @@ fun StructuredReadingContent(reading: TarotReading, bitmap: Bitmap?) {
                 }
 
                 Text(
-                    text = reading.summary,
+                    text = reading.summary.toMysticAnnotatedString(),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier.padding(top = 12.dp)
@@ -146,7 +146,7 @@ fun StructuredReadingContent(reading: TarotReading, bitmap: Bitmap?) {
         FadeInOnAppear(delayMillis = 350) {
             SectionCard(title = "GENERAL INTERPRETATION", icon = Icons.Default.MenuBook, iconTint = Color(0xFFD4AF37)) {
                 Text(
-                    text = reading.generalMeaning,
+                    text = reading.generalMeaning.toMysticAnnotatedString(),
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
                     style = MaterialTheme.typography.bodyMedium,
                     lineHeight = 22.sp
@@ -157,7 +157,7 @@ fun StructuredReadingContent(reading: TarotReading, bitmap: Bitmap?) {
         FadeInOnAppear(delayMillis = 450) {
             SectionCard(title = "COSMIC ADVICE", icon = Icons.Default.Directions, iconTint = NeonGreen) {
                 Text(
-                    text = reading.advice,
+                    text = reading.advice.toMysticAnnotatedString(),
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
                     style = MaterialTheme.typography.bodyMedium,
                     lineHeight = 22.sp
@@ -168,7 +168,7 @@ fun StructuredReadingContent(reading: TarotReading, bitmap: Bitmap?) {
         FadeInOnAppear(delayMillis = 550) {
             SectionCard(title = "PITFALLS TO AVOID", icon = Icons.Default.Info, iconTint = com.example.ui.theme.WarningRed) {
                 Text(
-                    text = reading.warning,
+                    text = reading.warning.toMysticAnnotatedString(),
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
                     style = MaterialTheme.typography.bodyMedium,
                     lineHeight = 22.sp

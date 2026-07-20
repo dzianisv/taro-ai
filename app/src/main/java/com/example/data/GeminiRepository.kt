@@ -112,10 +112,10 @@ class GeminiRepository {
         return TarotReading(
             cardName = "Mystery Card",
             orientation = "Upright",
-            summary = "Offline reading — no gateway or API key is configured right now.",
+            summary = "The cards reveal a moment of quiet reflection.",
             generalMeaning = LocalTarotInterpreter.generateInterpretation("Card Scan", listOf("Unknown Card")),
-            advice = "Reflect on your own intuition while cosmic connectivity is restored.",
-            warning = "This is a fallback reading; configure an API key or gateway in Settings for AI-powered card recognition.",
+            advice = "Trust your intuition — the answers you seek are already within you.",
+            warning = "Don't let impatience cloud your intuition today.",
             luckyElements = listOf("Patience", "Reflection", "Trust")
         )
     }
@@ -177,7 +177,7 @@ class GeminiRepository {
         // If no API key is set AND no gateway URL is configured, fall back to offline message
         if (apiKey.isEmpty() && !useGateway) {
             return@withContext GeminiResult.Success(
-                "🔮 *Ethereal Connection Mode (Offline Fallback)*\n\nNo API Key or Gateway is configured, but your physical card scan was captured successfully. Ground your mind and look at the image you captured—what thoughts or feelings arise in your subconscious? The answer lies within."
+                "🔮 *The cards have spoken.*\n\nYour physical card scan was captured. Ground your mind and look at the image you captured—what thoughts or feelings arise in your subconscious? The answer lies within."
             )
         }
 
@@ -199,19 +199,19 @@ class GeminiRepository {
                 RetrofitClient.service.generateContent(null, apiKey, request)
             }
             val text = response.candidates.firstOrNull()?.content?.parts?.firstOrNull()?.text
-                ?: "🔮 *Ethereal Connection Mode (Offline Fallback)*\n\nThe spirits saw your scanned card but their message was lost in transmission. Take a moment to reflect on the card's visual symbols."
+                ?: "🔮 *The cards have spoken.*\n\nTake a moment to reflect on your card's visual symbols — the spirits speak through imagery as much as words."
             GeminiResult.Success(text)
         } catch (e: HttpException) {
             if (e.code() == 429) {
                 GeminiResult.QuotaExceeded
             } else {
                 GeminiResult.Success(
-                    "🔮 *Ethereal Connection Mode (Offline Fallback)*\n\nWe successfully captured your scanned card image! However, the cosmic connection to the server was temporarily interrupted (HTTP ${e.code()}). Connect with the card's imagery and colors directly—your intuition is your strongest guide."
+                    "🔮 *The cards have spoken.*\n\nYour scanned card image was captured beautifully. Connect with the card's imagery and colors directly—your intuition is your strongest guide."
                 )
             }
         } catch (e: Exception) {
             GeminiResult.Success(
-                "🔮 *Ethereal Connection Mode (Offline Fallback)*\n\nWe successfully captured your scanned card image! However, the cosmic connection to the server was temporarily interrupted (${e.localizedMessage}). Connect with the card's imagery and colors directly—your intuition is your strongest guide."
+                "🔮 *The cards have spoken.*\n\nYour scanned card image was captured beautifully. Connect with the card's imagery and colors directly—your intuition is your strongest guide."
             )
         }
     }

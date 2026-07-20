@@ -223,7 +223,7 @@ fun ReadingContent(reading: ReadingEntity) {
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Text(
-                    text = reading.interpretation,
+                    text = reading.interpretation.toMysticAnnotatedString(),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(20.dp)
